@@ -35,18 +35,32 @@ class Pipeline {
     return this;
   }
 
-
   Flow apply(Flow data) {
     dynamic flow = data;
     for (var f in pipes) {
       try {
         flow = f(flow);
+        switch (flow) {
+          case _ when flow.status == Status.ok:
+            continue;
+          case _ when flow.status == Status.stop:
+            break;
+          case _ when flow.status == Status.error:
+            break;
+          default:
+            continue;
+        }
       }
       catch (e,s) {
-        flow.status = Status.exception;
-        return flow;
+        return _exception(e, s, flow);
       }
     }
+    return flow;
+  }
+
+  _exception(exception, stacktrace, Flow flow) {
+    flow.status = Status.exception;
+    flow.stacktrace = stacktrace;
     return flow;
   }
 }
@@ -83,6 +97,8 @@ class Flow {
   // List<Flow> tracing = const [];
 
   // TODO: store the stacktrace if present.
+  dynamic? reason;
+  dynamic? stacktrace;
 
   // TODO: create toString() function
 
@@ -118,6 +134,19 @@ class Flow {
     data = f(data);
     return this;
   }
+
+  Flow error({dynamic? reason}) {
+    this.status = Status.error;
+    this.reason = reason;
+    return this;
+  }
+
+  Flow stop({dynamic? reason}) {
+    this.status = Status.stop;
+    this.reason = reason;
+    return this;
+  }
+
 }
 
 /// An introspection function to show more
