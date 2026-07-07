@@ -3,18 +3,19 @@ import 'package:kanell/kanell.dart';
 import 'package:test/test.dart';
 
 void main() {
-  simple_test();
+  pipelineTest();
+  pipeTest();
+  flowTest();
 }
 
-void simple_test() {
-  group('simple test', () {
+void pipelineTest() {
+  group('simple tests', () {
     test('empty pipeline', () {
       // create a new pipeline
       var pipeline = Pipeline();
 
       // create a new flow
       Flow flow = Flow(data: 0);
-      print("debug: ${flow.data}");
 
       // execute the pipeline
       var result = pipeline.apply(flow);
@@ -81,18 +82,22 @@ void simple_test() {
       expect(result.status, equals(Status.error));
       expect(result.reason, equals("bad args"));
     });
-  });
-}
 
-void advanced_test() {
-  group('advanced_test', () {
-    test('debugging pipeline', () {
-      // TODO
-      // var pipeline = kanell.Pipeline.debug();
+    test('start in debug mode', () {
       var pipeline = Pipeline();
       pipeline.add(_increment);
       pipeline.add(_decrement);
 
+      Flow flow = Flow(data: 0, debug: true);
+      var result = pipeline.apply(flow);
+      expect(result.data, equals(0));
+    });
+
+    test('switch to debug mode', () {
+      var pipeline = Pipeline();
+      pipeline.add(_increment);
+      pipeline.add((Flow flow) => flow.debug());
+      pipeline.add(_decrement);
       Flow flow = Flow(data: 0);
       var result = pipeline.apply(flow);
       expect(result.data, equals(0));
@@ -100,23 +105,11 @@ void advanced_test() {
   });
 }
 
-/*
-
-Flow flow = Flow();
-
-void expert_test() {
-  group('expert pipeline', () {
-    test('expert pipeline', () {
-      var pipeline = kanell.Pipeline();
-      // switch in debug mode
-      pipeline.add((Flow flow) => flow.debug());
-      // introspection
-      pipeline.add(kanell.introspection); 
-    });
-  });
+void pipeTest() {
 }
 
-*/
+void flowTest() {
+}
 
 Flow _increment(Flow flow) {
   flow.data += 1;

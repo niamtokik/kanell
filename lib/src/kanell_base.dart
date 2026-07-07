@@ -40,6 +40,7 @@ class Pipeline {
     for (var f in pipes) {
       try {
         flow = f(flow);
+        _evaluateDebug(flow);
         switch (flow) {
           case _ when flow.status == Status.ok:
             continue;
@@ -48,7 +49,7 @@ class Pipeline {
           case _ when flow.status == Status.error:
             break;
           default:
-            continue;
+            throw "unsupported status";
         }
       }
       catch (e,s) {
@@ -56,6 +57,16 @@ class Pipeline {
       }
     }
     return flow;
+  }
+
+  _evaluateDebug(Flow flow) {
+    if (flow.debug == true) {
+      print(flow);
+    }
+  }
+
+  // main loop evaluator
+  _evaluateStatus(Flow flow) {
   }
 
   _exception(exception, stacktrace, Flow flow) {
@@ -69,8 +80,18 @@ class Pipeline {
 /// pipes are accepting a flow and will deal with them
 /// depending on their input or output.
 class Pipe {
-  static Flow apply(Flow flow) {
-    return flow;
+  Function(Flow) function;
+  String? name;
+
+  Pipe(
+    Function(Flow) function, {
+    String? name
+  }) :
+    this.function = function,
+    this.name = name;
+
+  Flow apply(Flow flow) {
+    return function(flow);
   }
 }
 
@@ -82,11 +103,11 @@ class Flow {
   dynamic? args;
 
   // timestamp every steps.
-  bool timestamp = false;
+  bool _timestamp = false;
 
   // when set, every time the flow is executed,
   // information printed.
-  bool debug = false;
+  bool _debug = false;
 
   // TODO: tracing capabilities, after every call
   //       of the pipeline, the input/output is
@@ -116,8 +137,8 @@ class Flow {
     this.data = data,
     this.status = status,
     this.args = args,
-    this.timestamp = timestamp,
-    this.debug = debug;
+    this._timestamp = timestamp,
+    this._debug = debug;
 
   Flow.debug({
     required dynamic data,
@@ -127,8 +148,8 @@ class Flow {
     this.data = data,
     this.status = status,
     this.args = args,
-    this.timestamp = true,
-    this.debug = true;
+    this._timestamp = true,
+    this._debug = true;
 
   Flow apply(Function f) {
     data = f(data);
@@ -147,6 +168,15 @@ class Flow {
     return this;
   }
 
+  Flow timestamp() {
+    this._timestamp = this._timestamp ? true : false;
+    return this;
+  }
+
+  Flow debug() {
+    this._debug = this._debug ? true : false;
+    return this;
+  }
 }
 
 /// An introspection function to show more
@@ -154,23 +184,5 @@ class Flow {
 /// flows.
 Flow introspection(Flow flow) {
   print(Flow);
-  return flow;
-}
-
-/// Stop the pipeline
-Flow stop(Flow flow) {
-  flow.status = Status.stop;
-  return flow;
-}
-
-/// Enable or disable timestamping
-Flow timestamp(Flow flow) {
-  flow.timestamp = flow.timestamp ? true : false;
-  return flow;
-}
-
-/// Enable or disable debug mode
-Flow debug(Flow flow) {
-  flow.debug = flow.debug ? true : false;
   return flow;
 }
